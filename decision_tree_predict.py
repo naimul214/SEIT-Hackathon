@@ -15,10 +15,10 @@ from protobuf_to_json import protobuf_to_json  # Assuming this is a custom or in
 bus_predictions = {}
 
 # Load the saved scaler and decision tree model
-with open("scaler.pkl", "rb") as file:
+with open("model_weights/scaler.pkl", "rb") as file:
     scaler = pickle.load(file)
 
-with open("decision_tree_model.pkl", "rb") as file:
+with open("model_weights/decision_tree_model.pkl", "rb") as file:
     dt_model = pickle.load(file)
 
 # Define Eastern Time Zone
