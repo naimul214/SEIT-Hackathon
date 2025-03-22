@@ -50,5 +50,6 @@ dependencies = [
     "scikit-learn",
     "uvicorn",
     "fastapi",
-    "httpx"
+    "httpx",
+    "jinja2"
 ]
