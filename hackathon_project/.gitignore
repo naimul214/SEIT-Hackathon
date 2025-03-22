@@ -1,0 +1,6 @@
+# Ignores Python cache directories
+__pycache__/
+
+# Ignores compiled bytecode files
+*.py[cod]
+*.pyo
