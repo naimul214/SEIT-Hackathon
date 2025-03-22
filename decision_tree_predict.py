@@ -180,9 +180,25 @@ def make_predictions(df):
     predictions = dt_model.predict(X_scaled)
     bus_predictions = {}
 
+    # Iterate through each bus to compare predicted and real status
     for idx, row in df_pred.iterrows():
-        bus_predictions[row['bus_id']] = predictions[idx]
-        print(f"Bus ID: {row['bus_id']}, Trip ID: {row['trip_id']}, Predicted Status: {predictions[idx]}")
+        predicted_status = predictions[idx]
+        
+        # Get the real status based on the calculated time to arrival
+        time_to_arrival = row['time_to_arrival_seconds']
+        if time_to_arrival < -60:
+            real_status = 'early'
+        elif time_to_arrival > 60:
+            real_status = 'late'
+        else:
+            real_status = 'on-time'
+        
+        # Print both predicted and real status
+        print(f"Bus ID: {row['bus_id']}, Trip ID: {row['trip_id']}, Predicted Status: {predicted_status}, Real Status: {real_status}")
+        
+        # Save the predicted status in a dictionary
+        bus_predictions[row['bus_id']] = predicted_status
+    
     return bus_predictions
 
 def decision_tree_scan(time_in_seconds=0):
