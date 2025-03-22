@@ -1,6 +1,8 @@
+# decision_tree_predict.py
+
 import time
 import pickle
-import requests
+import httpx  # Replaced requests with httpx for async support
 import pandas as pd
 import math
 import pytz
@@ -8,7 +10,7 @@ import tempfile
 import os
 import json
 from datetime import datetime
-from protobuf_to_json import protobuf_to_json  # Import the provided function
+from protobuf_to_json import protobuf_to_json  # Assuming this is a custom or installed module
 
 bus_predictions = {}
 
@@ -39,29 +41,33 @@ def calculate_speed(distance, time_diff):
     """Calculate speed in meters per second."""
     return 0 if time_diff == 0 else distance / time_diff
 
-def fetch_and_convert(url):
-    """Fetch GTFS-Realtime data and convert to JSON."""
+async def fetch_and_convert(url):
+    """Fetch GTFS-Realtime data and convert to JSON asynchronously."""
     try:
-        response = requests.get(url)
-        response.raise_for_status()
-        with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
-            tmp_file.write(response.content)
-            tmp_file.flush()
-            tmp_filename = tmp_file.name
-        data_json = protobuf_to_json(tmp_filename, save=False)
-        os.remove(tmp_filename)
-        return data_json
+        async with httpx.AsyncClient(timeout=10.0) as client:  # 10-second timeout
+            response = await client.get(url)
+            response.raise_for_status()
+            with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
+                tmp_file.write(response.content)
+                tmp_file.flush()
+                tmp_filename = tmp_file.name
+            data_json = protobuf_to_json(tmp_filename, save=False)
+            os.remove(tmp_filename)
+            return data_json
+    except httpx.TimeoutException:
+        print(f"Timeout fetching data from {url}")
+        return None
     except Exception as e:
         print(f"Error fetching or converting data from {url}: {e}")
         return None
 
-def get_real_time_data(save=False):
+async def get_real_time_data(save=False):
     """Fetch, process, and convert GTFS data to a structured dataset."""
     vehicle_positions_url = "https://drtonline.durhamregiontransit.com/gtfsrealtime/VehiclePositions"
     trip_updates_url = "https://drtonline.durhamregiontransit.com/gtfsrealtime/TripUpdates"
     
-    vehicle_positions = fetch_and_convert(vehicle_positions_url)
-    trip_updates = fetch_and_convert(trip_updates_url)
+    vehicle_positions = await fetch_and_convert(vehicle_positions_url)
+    trip_updates = await fetch_and_convert(trip_updates_url)
     
     if not vehicle_positions or not trip_updates:
         print("Failed to fetch GTFS data.")
@@ -145,7 +151,6 @@ def get_real_time_data(save=False):
     if save:
         csv_filename = 'bus_status_dataset.csv'
         df.to_csv(csv_filename, index=False)
-        
         print(f"Dataset saved as '{csv_filename}' with {len(df)} records.")
     
     return df
@@ -154,7 +159,7 @@ def make_predictions(df):
     """Make predictions using the decision tree model."""
     if df is None or df.empty:
         print("No data available for predictions.")
-        return
+        return None
     
     df_pred = df.copy()
 
@@ -175,7 +180,6 @@ def make_predictions(df):
     predictions = dt_model.predict(X_scaled)
     bus_predictions = {}
 
-
     for idx, row in df_pred.iterrows():
         bus_predictions[row['bus_id']] = predictions[idx]
         print(f"Bus ID: {row['bus_id']}, Trip ID: {row['trip_id']}, Predicted Status: {predictions[idx]}")
@@ -186,13 +190,14 @@ def decision_tree_scan(time_in_seconds=0):
     Fetches real-time data, processes it, and makes predictions.
     If `time_in_seconds` > 0, runs in a loop every `time_in_seconds` seconds.
     """
+    import asyncio  # Required for async loop
     if time_in_seconds <= 0:
-        df = get_real_time_data()
+        df = asyncio.run(get_real_time_data())
         if df is not None:
             make_predictions(df)
     else:
         while True:
-            df = get_real_time_data()
+            df = asyncio.run(get_real_time_data())
             if df is not None:
                 make_predictions(df)
             time.sleep(time_in_seconds)
