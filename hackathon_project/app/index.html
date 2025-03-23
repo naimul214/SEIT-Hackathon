@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Bus Prediction API</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/assets/favicon.png">
     <!-- Include Leaflet CSS and JS -->
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css" />
     <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
@@ -84,7 +86,7 @@
             background: none;
             border: none;
             box-shadow: none;
-            color: black; /* Changed from white to black */
+            color: black;
             font-size: 8px;
             text-align: center;
             pointer-events: none;
@@ -127,7 +129,14 @@
         <p>Below is the Decision Tree model used for predictions:</p>
         <div id="decision-tree-container">
             <p><strong>Decision Tree model</strong></p>
-            <img src="https://i.imgur.com/LkfDaTR.png" alt="Decision Tree Visualization">
+            <img 
+                id="decision-tree-img" 
+                src="/assets/tree.png" 
+                alt="Decision Tree Visualization" 
+                onload="console.log('Decision Tree image loaded successfully from /assets/tree.png');" 
+                onerror="handleImageError(this);"
+            >
+            <p id="decision-tree-error" style="display:none; color:red;">Failed to load Decision Tree image from /assets/tree.png. Check the file path and server setup.</p>
         </div>
         <p>Coming soon! Use <a href="/fetch_vehicle_positions">vehicle positions</a> and <a href="/fetch_trip_updates">trip updates</a> for analytics.</p>
     </div>
@@ -189,6 +198,12 @@
             }
         }
 
+        function handleImageError(img) {
+            console.error('Error loading Decision Tree image from: ' + img.src);
+            img.style.display = 'none';
+            document.getElementById('decision-tree-error').style.display = 'block';
+        }
+
         function openTab(evt, tabName) {
             var i, tabcontent, tabbuttons;
             tabcontent = document.getElementsByClassName("tab-content");
@@ -227,6 +242,14 @@
                 fetchAndUpdateMap();
                 setInterval(fetchAndUpdateMap, 5000);
             }
+
+            // Reset decision tree image visibility when opening dashboard
+            if (tabName === 'dashboard') {
+                var img = document.getElementById('decision-tree-img');
+                var errorMsg = document.getElementById('decision-tree-error');
+                img.style.display = 'block';
+                errorMsg.style.display = 'none';
+            }
         }
 
         function getStatusColor(status) {
@@ -240,7 +263,10 @@
 
         function fetchAndUpdateMap() {
             fetch('/get_predictions')
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) throw new Error('Network response was not ok');
+                    return response.json();
+                })
                 .then(data => {
                     busMarkers.clearLayers();
                     data.bus_predictions.forEach(bus => {
@@ -250,14 +276,12 @@
                             radius: 10
                         }).addTo(busMarkers);
                         
-                        // Add permanent tooltip with route_id
                         marker.bindTooltip(bus.route_id, {
                             permanent: true,
                             direction: 'center',
                             className: 'route-label'
                         });
                         
-                        // Update popup with bus_id, route_id, and status
                         marker.bindPopup(`Bus ID: ${bus.bus_id}<br>Route ID: ${bus.route_id}<br>Predicted Status: ${bus.predicted_status}`);
                     });
                 })

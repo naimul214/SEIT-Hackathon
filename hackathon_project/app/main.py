@@ -1,6 +1,7 @@
 # api.py 
 from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 import decision_tree_predict
 import uvicorn
 import sys
@@ -18,6 +19,9 @@ app = FastAPI(
     docs_url="/docs",    # Swagger UI at /docs
     redoc_url="/redoc",  # ReDoc at /redoc
 )
+
+# Mount the 'assets' folder as a static directory
+app.mount("/assets", StaticFiles(directory="assets"), name="assets")
 
 # Load the HTML file
 with open("index.html", "r") as f:
