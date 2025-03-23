@@ -38,9 +38,10 @@ async def get_predictions():
     logger.info("Fetching predictions")
     df = await decision_tree_predict.get_real_time_data()
     if df is not None:
-        bus_predictions = decision_tree_predict.make_predictions(df)
-        logger.info("Predictions made")
-        return {"bus_predictions": bus_predictions}
+        map_data = decision_tree_predict.make_predictions(df)
+        if map_data is not None:
+            logger.info("Predictions made")
+            return {"bus_predictions": map_data}
     logger.error("Failed to fetch real-time data")
     return {"error": "Failed to fetch or process real-time data."}
 

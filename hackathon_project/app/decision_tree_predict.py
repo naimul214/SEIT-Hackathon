@@ -156,14 +156,14 @@ async def get_real_time_data(save=False):
     return df
 
 def make_predictions(df):
-    """Make predictions using the decision tree model."""
+    """Make predictions using the decision tree model and return data for the map."""
     if df is None or df.empty:
         print("No data available for predictions.")
         return None
     
     df_pred = df.copy()
 
-    # Drop non-feature columns
+    # Drop non-feature columns, including route_id
     blacklist = ['bus_id', 'trip_id', 'route_id', 'next_stop_name', 'stop_sequence', 'wheelchair_boarding', 'status']
     X = df_pred.drop(columns=blacklist, errors='ignore')
 
@@ -178,28 +178,14 @@ def make_predictions(df):
 
     # Predict
     predictions = dt_model.predict(X_scaled)
-    bus_predictions = {}
 
-    # Iterate through each bus to compare predicted and real status
-    for idx, row in df_pred.iterrows():
-        predicted_status = predictions[idx]
-        
-        # Get the real status based on the calculated time to arrival
-        time_to_arrival = row['time_to_arrival_seconds']
-        if time_to_arrival < -60:
-            real_status = 'early'
-        elif time_to_arrival > 60:
-            real_status = 'late'
-        else:
-            real_status = 'on-time'
-        
-        # Print both predicted and real status
-        print(f"Bus ID: {row['bus_id']}, Trip ID: {row['trip_id']}, Predicted Status: {predicted_status}, Real Status: {real_status}")
-        
-        # Save the predicted status in a dictionary
-        bus_predictions[row['bus_id']] = predicted_status
+    # Add predicted status to the DataFrame
+    df_pred['predicted_status'] = predictions
+
+    # Select relevant columns for the map, including route_id
+    map_data = df_pred[['bus_id', 'route_id', 'current_lat', 'current_lon', 'predicted_status']].to_dict(orient='records')
     
-    return bus_predictions
+    return map_data
 
 def decision_tree_scan(time_in_seconds=0):
     """
