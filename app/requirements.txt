@@ -1,0 +1,11 @@
+protobuf
+gtfs-realtime-bindings
+pandas
+numpy
+requests
+matplotlib
+scikit-learn
+uvicorn
+fastapi
+httpx
+jinja2

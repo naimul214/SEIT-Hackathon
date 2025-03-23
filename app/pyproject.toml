@@ -1,0 +1,19 @@
+[project]
+name = "app"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "protobuf", 
+    "gtfs-realtime-bindings", 
+    "pandas",
+    "numpy",
+    "requests",
+    "matplotlib",
+    "scikit-learn",
+    "uvicorn",
+    "fastapi",
+    "httpx",
+    "jinja2",
+    ]
