@@ -137,14 +137,6 @@ This project demonstrates a production-ready edge/server API that:
 
 ---
 
-## Results & Evaluation
-
-> [!NOTE]
-> **Performance Metric & Visualization Placeholder**
-> - *Model Performance*: The current Decision Tree model achieves **~99.8% validation accuracy** due to target leakage (see Limitations below). Upon addressing target leakage, realistic baseline metrics (e.g. F1-score, Confusion Matrix) will be documented here.
-> - *Visualization*: [Insert screenshot or GIF here showing the live bus map or confusion matrix visualization]
-
----
 
 ## Limitations & Future Work
 
