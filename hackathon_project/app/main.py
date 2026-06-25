@@ -5,6 +5,7 @@ import decision_tree_predict
 import uvicorn
 import sys
 import logging
+from pathlib import Path
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -19,8 +20,9 @@ app = FastAPI(
     redoc_url="/redoc",  # ReDoc at /redoc
 )
 
-# Load the HTML file
-with open("index.html", "r") as f:
+# Load the HTML file using absolute path relative to this file
+BASE_DIR = Path(__file__).resolve().parent
+with open(BASE_DIR / "index.html", "r", encoding="utf-8") as f:
     ROOT_HTML = f.read()
 
 @app.get("/", response_class=HTMLResponse)

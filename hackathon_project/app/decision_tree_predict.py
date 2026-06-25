@@ -9,23 +9,38 @@ import pytz
 import tempfile
 import os
 import json
+import logging
 from datetime import datetime
-from protobuf_to_json import protobuf_to_json  # Assuming this is a custom or installed module
+from pathlib import Path
+from protobuf_to_json import protobuf_to_json  # Custom module
+
+logger = logging.getLogger(__name__)
 
 bus_predictions = {}
 
-# Load the saved scaler and decision tree model
-with open("model_weights/scaler.pkl", "rb") as file:
-    scaler = pickle.load(file)
+# Get absolute directory of the script
+BASE_DIR = Path(__file__).resolve().parent
 
-with open("model_weights/decision_tree_model.pkl", "rb") as file:
-    dt_model = pickle.load(file)
+# Load the saved scaler and decision tree model using absolute paths
+try:
+    with open(BASE_DIR / "model_weights/scaler.pkl", "rb") as file:
+        scaler = pickle.load(file)
+
+    with open(BASE_DIR / "model_weights/decision_tree_model.pkl", "rb") as file:
+        dt_model = pickle.load(file)
+except FileNotFoundError as e:
+    logger.error(f"Failed to load model weights or scaler: {e}")
+    raise
 
 # Define Eastern Time Zone
 eastern = pytz.timezone('US/Eastern')
 
-# Load stops data
-stops_df = pd.read_csv('data/stops.txt')
+# Load stops data using absolute path
+try:
+    stops_df = pd.read_csv(BASE_DIR / "data/stops.txt")
+except FileNotFoundError as e:
+    logger.error(f"Failed to load stops metadata: {e}")
+    raise
 
 # --- Utility Functions ---
 def calculate_distance(lat1, lon1, lat2, lon2):
@@ -55,10 +70,10 @@ async def fetch_and_convert(url):
             os.remove(tmp_filename)
             return data_json
     except httpx.TimeoutException:
-        print(f"Timeout fetching data from {url}")
+        logger.error(f"Timeout fetching data from {url}")
         return None
     except Exception as e:
-        print(f"Error fetching or converting data from {url}: {e}")
+        logger.error(f"Error fetching or converting data from {url}: {e}")
         return None
 
 async def get_real_time_data(save=False):
@@ -70,7 +85,7 @@ async def get_real_time_data(save=False):
     trip_updates = await fetch_and_convert(trip_updates_url)
     
     if not vehicle_positions or not trip_updates:
-        print("Failed to fetch GTFS data.")
+        logger.error("Failed to fetch GTFS data.")
         return None
     
     processed_data = []
@@ -151,19 +166,24 @@ async def get_real_time_data(save=False):
     if save:
         csv_filename = 'bus_status_dataset.csv'
         df.to_csv(csv_filename, index=False)
-        print(f"Dataset saved as '{csv_filename}' with {len(df)} records.")
+        logger.info(f"Dataset saved as '{csv_filename}' with {len(df)} records.")
     
     return df
 
 def make_predictions(df):
     """Make predictions using the decision tree model."""
     if df is None or df.empty:
-        print("No data available for predictions.")
+        logger.warning("No data available for predictions.")
         return None
     
     df_pred = df.copy()
 
     # Drop non-feature columns
+    # NOTE: To fix the Target Leakage issue, 'time_to_arrival_seconds' and 'expected_arrival_time' 
+    # must be dropped from training and inference. However, since the loaded scaler and model
+    # were trained with these features, dropping them now without retraining would result in 
+    # a feature mismatch error. Once the model is retrained using the updated train_decision_tree.py, 
+    # add these columns to the blacklist below.
     blacklist = ['bus_id', 'trip_id', 'route_id', 'next_stop_name', 'stop_sequence', 'wheelchair_boarding', 'status']
     X = df_pred.drop(columns=blacklist, errors='ignore')
 
@@ -193,8 +213,8 @@ def make_predictions(df):
         else:
             real_status = 'on-time'
         
-        # Print both predicted and real status
-        print(f"Bus ID: {row['bus_id']}, Trip ID: {row['trip_id']}, Predicted Status: {predicted_status}, Real Status: {real_status}")
+        # Log both predicted and real status
+        logger.info(f"Bus ID: {row['bus_id']}, Trip ID: {row['trip_id']}, Predicted Status: {predicted_status}, Real Status: {real_status}")
         
         # Save the predicted status in a dictionary
         bus_predictions[row['bus_id']] = predicted_status
