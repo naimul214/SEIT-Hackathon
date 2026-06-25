@@ -36,7 +36,7 @@ This project demonstrates a production-ready edge/server API that:
 ```text
   ┌────────────────────────────────────────────────────────┐
   │         Durham Regional Transit (DRT) API              │
-  │  (GTFS Realtime /VehiclePositions & /TripUpdates Feeds) │
+  │ (GTFS Realtime /VehiclePositions & /TripUpdates Feeds) │
   └───────────────────────────┬────────────────────────────┘
                               │ (HTTPS Get Protobuf Feeds)
                               ▼
@@ -50,13 +50,13 @@ This project demonstrates a production-ready edge/server API that:
   │                 Feature Engineering                    │
   │  - Distance to stop (Haversine formula calculation)    │
   │  - Expected speed (Distance / Time-to-Arrival)         │
-  │  - Join stops.txt metadata (coordinates & boarding)   │
+  │  - Join stops.txt metadata (coordinates & boarding)    │
   └───────────────────────────┬────────────────────────────┘
                               │ (Structured Pandas Dataframe)
                               ▼
   ┌────────────────────────────────────────────────────────┐
   │            Machine Learning Inference                  │
-  │  - Preprocess features with fitted StandardScaler     │
+  │  - Preprocess features with fitted StandardScaler      │
   │  - Classify status using trained Decision Tree         │
   └───────────────────────────┬────────────────────────────┘
                               │ (Inference Output: Early, Late, On-Time)
@@ -64,7 +64,7 @@ This project demonstrates a production-ready edge/server API that:
   ┌────────────────────────────────────────────────────────┐
   │                 API Response & UI                      │
   │  - /get_predictions endpoint JSON output               │
-  │  - Live HTML/JS Map interface showing transit status  │
+  │  - Live HTML/JS Map interface showing transit status   │
   └────────────────────────────────────────────────────────┘
 ```
 
